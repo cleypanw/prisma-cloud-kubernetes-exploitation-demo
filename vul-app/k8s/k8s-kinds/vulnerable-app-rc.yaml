@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: secret-sa
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: pod-sa-clusterrolebinding
+subjects:
+- kind: ServiceAccount
+  name: secret-sa
+  namespace: default
+  apiGroup: ""
+roleRef:
+  kind: ClusterRole
+  name: secret-role
+  apiGroup: ""
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: secret-role
+rules:
+- apiGroups: ["*"]
+  resources: ["serviceaccounts","serviceaccounts/token"]
+  verbs: ["*"]
+---
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  labels:
+    name: vul-app
+  name: vul-app
+spec:
+  replicas: 1
+  selector:
+    name: vul-app
+  template:
+    metadata:
+      labels:
+        name: vul-app
+    spec:
+      serviceAccountName: secret-sa
+      containers:
+      - image: chrisley75/vul-app:2.0.0
+        name: vul-app
+        ports:
+        - containerPort: 5000
+          name: http-server
